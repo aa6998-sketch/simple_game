@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七堵國小 STEAM MAKER 創客教室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Noto Sans TC 字型 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0f4f8;
+            scroll-behavior: smooth;
+        }
+        .steam-gradient {
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+        }
+        .grid-bg {
+            /* 模擬照片中的黑色孔洞板 */
+            background-color: #2a2a2a;
+            background-image: radial-gradient(#1a1a1a 20%, transparent 20%);
+            background-size: 40px 40px;
+            background-position: 0 0;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas {
+            cursor: crosshair;
+            touch-action: none; /* 防止觸控時捲動頁面 */
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #4ECDC4;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        /* Modal 動畫 */
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* 影片裝飾動畫 */
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- 背景音樂控制 -->
+    <div class="fixed bottom-4 right-4 z-50 bg-white p-2 rounded-full shadow-lg flex items-center gap-2 border border-gray-200">
+        <audio id="bgMusic" loop>
+            <!-- 輕鬆有趣的背景音樂 -->
+            <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mp3">
+        </audio>
+        <button onclick="toggleMusic()" class="p-2 rounded-full hover:bg-gray-100 text-pink-500 transition">
+            <i id="musicIcon" data-lucide="music" class="w-6 h-6"></i>
+        </button>
+        <span class="text-xs font-bold text-gray-500 pr-2">背景音樂</span>
+    </div>
+
+    <!-- 導航列 -->
+    <nav class="bg-white shadow-md fixed w-full z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-28">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center gap-4">
+                        <!-- 校徽維持 2 倍大 (w-24 h-24) -->
+                        <img src="校徽cute版.png" alt="七堵國小校徽" class="w-24 h-24 object-contain hover:scale-110 transition duration-300">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-wider text-gray-900">七堵國小</h1>
+                            <span class="text-xs text-blue-500 font-bold tracking-[0.2em]">STEAM MAKER</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="nav-link font-bold text-gray-600 hover:text-blue-600">首頁</a>
+                    <a href="#philosophy" class="nav-link font-bold text-gray-600 hover:text-blue-600">教學理念</a>
+                    <a href="#simulator" class="nav-link font-bold text-gray-600 hover:text-blue-600">線上積木牆</a>
+                    <a href="#gallery" class="nav-link font-bold text-gray-600 hover:text-blue-600">作品展示</a>
+                </div>
+                <div class="md:hidden flex items-center">
+                    <button class="text-gray-600 hover:text-gray-900">
+                        <i data-lucide="menu" class="w-8 h-8"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero 區塊 -->
+    <section id="home" class="pt-36 pb-12 md:pt-48 md:pb-24 steam-gradient text-white relative overflow-hidden">
+        <!-- 裝飾圓圈背景 -->
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-blue-900 opacity-10 rounded-full -translate-x-1/2 translate-y-1/2"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <!-- 使用 Flexbox 建立左右佈局 -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-12">
+                
+                <!-- 左側：文字內容 -->
+                <div class="md:w-1/2 text-center md:text-left space-y-6">
+                    <h2 class="text-4xl md:text-6xl font-black drop-shadow-lg leading-tight">
+                        想像 • 實作 <br>
+                        <span class="text-yellow-300">創新未來</span>
+                    </h2>
+                    <p class="text-xl md:text-2xl font-light opacity-90">
+                        七堵國小 STEAM MAKER <br>
+                        讓孩子的創意動起來，將點子變成現實！
+                    </p>
+                    <div class="pt-4">
+                        <a href="#simulator" class="inline-block bg-white text-blue-600 font-bold py-4 px-10 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition transform duration-200">
+                            <i data-lucide="play-circle" class="inline-block w-6 h-6 mr-2 align-text-bottom"></i>
+                            體驗線上積木牆
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 右側：影片展示區 (取代原圖片) -->
+                <div class="md:w-1/2 relative w-full max-w-lg">
+                    <!-- 裝飾性光暈 -->
+                    <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+                    <div class="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+                    <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+                    
+                    <!-- 影片容器 -->
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white/30 backdrop-blur-sm transform rotate-2 hover:rotate-0 transition duration-500 bg-black/20 group">
+                        <!-- 使用上傳的影片檔案，設定自動播放、靜音、循環 -->
+                        <video autoplay loop muted playsinline class="w-full h-auto object-cover">
+                            <source src="grok-video-9cac6a83-05ca-4699-ac73-2914f627a8ca.mp4" type="video/mp4">
+                            您的瀏覽器不支援影片標籤。
+                        </video>
+                        
+                        <!-- 標籤 (選填) -->
+                        <div class="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md font-bold tracking-wider">
+                            <i data-lucide="video" class="inline w-3 h-3 mr-1"></i> 活動花絮
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- STEAM 理念介紹 (可點擊) -->
+    <section id="philosophy" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-gray-900">STEAM 教育核心</h2>
+                <div class="w-20 h-1 bg-blue-500 mx-auto mt-4 rounded"></div>
+                <p class="mt-4 text-gray-600">點擊下方卡片，深入了解各領域內涵</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 text-center">
+                <!-- S -->
+                <button onclick="openModal('S')" class="p-6 rounded-xl bg-blue-50 hover:bg-blue-100 hover:-translate-y-2 transition duration-300 shadow-sm hover:shadow-md cursor-pointer group">
+                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold group-hover:scale-110 transition">S</div>
+                    <h3 class="text-xl font-bold mb-2">Science</h3>
+                    <p class="text-sm text-gray-600">科學探究</p>
+                </button>
+                <!-- T -->
+                <button onclick="openModal('T')" class="p-6 rounded-xl bg-green-50 hover:bg-green-100 hover:-translate-y-2 transition duration-300 shadow-sm hover:shadow-md cursor-pointer group">
+                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold group-hover:scale-110 transition">T</div>
+                    <h3 class="text-xl font-bold mb-2">Technology</h3>
+                    <p class="text-sm text-gray-600">科技運用</p>
+                </button>
+                <!-- E -->
+                <button onclick="openModal('E')" class="p-6 rounded-xl bg-yellow-50 hover:bg-yellow-100 hover:-translate-y-2 transition duration-300 shadow-sm hover:shadow-md cursor-pointer group">
+                    <div class="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold group-hover:scale-110 transition">E</div>
+                    <h3 class="text-xl font-bold mb-2">Engineering</h3>
+                    <p class="text-sm text-gray-600">工程設計</p>
+                </button>
+                <!-- A -->
+                <button onclick="openModal('A')" class="p-6 rounded-xl bg-red-50 hover:bg-red-100 hover:-translate-y-2 transition duration-300 shadow-sm hover:shadow-md cursor-pointer group">
+                    <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold group-hover:scale-110 transition">A</div>
+                    <h3 class="text-xl font-bold mb-2">Art</h3>
+                    <p class="text-sm text-gray-600">藝術美感</p>
+                </button>
+                <!-- M -->
+                <button onclick="openModal('M')" class="p-6 rounded-xl bg-purple-50 hover:bg-purple-100 hover:-translate-y-2 transition duration-300 shadow-sm hover:shadow-md cursor-pointer group">
+                    <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold group-hover:scale-110 transition">M</div>
+                    <h3 class="text-xl font-bold mb-2">Math</h3>
+                    <p class="text-sm text-gray-600">數學邏輯</p>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 互動積木牆 Simulator -->
+    <section id="simulator" class="py-12 bg-gray-100">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <i data-lucide="settings" class="text-blue-600"></i>
+                        線上積木創客牆
+                    </h2>
+                    <p class="text-gray-600 mt-2">使用左側更多元的零件，打造你的創意機關！</p>
+                </div>
+                <div class="flex gap-3 mt-4 md:mt-0">
+                    <button onclick="clearBoard()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-bold transition flex items-center gap-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> 清空
+                    </button>
+                    <button id="toggleRunBtn" onclick="toggleSimulation()" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-bold shadow-lg transition flex items-center gap-2">
+                        <i data-lucide="play" class="w-5 h-5"></i> <span id="runBtnText">開始運轉</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- 工具箱 -->
+                <div class="lg:w-72 bg-white p-4 rounded-xl shadow-lg border border-gray-200 max-h-[800px] overflow-y-auto">
+                    <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center gap-2">
+                        <i data-lucide="box" class="w-4 h-4"></i> 零件箱
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 齒輪區 -->
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold mb-2">動力齒輪 (Gears)</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="selectTool('gear', 'red', 40, 12)" class="tool-btn hover:bg-gray-50 p-1 rounded border border-transparent hover:border-gray-200 flex flex-col items-center group">
+                                    <div class="w-8 h-8 rounded-full border-2 border-dashed border-red-500 group-hover:rotate-45 transition"></div>
+                                    <span class="text-[10px] mt-1">紅(12齒)</span>
+                                </button>
+                                <button onclick="selectTool('gear', 'blue', 60, 20)" class="tool-btn hover:bg-gray-50 p-1 rounded border border-transparent hover:border-gray-200 flex flex-col items-center group">
+                                    <div class="w-10 h-10 rounded-full border-2 border-dashed border-blue-500 group-hover:rotate-45 transition"></div>
+                                    <span class="text-[10px] mt-1">藍(20齒)</span>
+                                </button>
+                                <button onclick="selectTool('gear', 'yellow', 80, 28)" class="tool-btn hover:bg-gray-50 p-1 rounded border border-transparent hover:border-gray-200 flex flex-col items-center group">
+                                    <div class="w-12 h-12 rounded-full border-2 border-dashed border-yellow-500 group-hover:rotate-45 transition"></div>
+                                    <span class="text-[10px] mt-1">黃(28齒)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 結構區 -->
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold mb-2">結構積木 (Beams)</p>
+                            <div class="space-y-2">
+                                <button onclick="selectTool('beam', '#4ade80', 120, 20)" class="w-full tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex items-center gap-2">
+                                    <div class="w-16 h-3 bg-green-400 rounded-full"></div>
+                                    <span class="text-xs">長條 (5孔)</span>
+                                </button>
+                                <button onclick="selectTool('beam', '#a78bfa', 80, 20)" class="w-full tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex items-center gap-2">
+                                    <div class="w-10 h-3 bg-purple-400 rounded-full"></div>
+                                    <span class="text-xs">短條 (3孔)</span>
+                                </button>
+                                <!-- L型 -->
+                                <button onclick="selectTool('l-beam', '#fb923c', 80, 20)" class="w-full tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex items-center gap-2">
+                                    <div class="relative w-8 h-8">
+                                        <div class="absolute top-0 left-0 w-3 h-8 bg-orange-400 rounded-full"></div>
+                                        <div class="absolute bottom-0 left-0 w-8 h-3 bg-orange-400 rounded-full"></div>
+                                    </div>
+                                    <span class="text-xs">L型轉角</span>
+                                </button>
+                                <!-- T型 -->
+                                <button onclick="selectTool('t-beam', '#22d3ee', 80, 20)" class="w-full tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex items-center gap-2">
+                                    <div class="relative w-8 h-8 flex items-center justify-center">
+                                        <div class="absolute w-3 h-8 bg-cyan-400 rounded-full"></div>
+                                        <div class="absolute w-8 h-3 bg-cyan-400 rounded-full"></div>
+                                    </div>
+                                    <span class="text-xs">T型連接</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 裝飾區 -->
+                        <div>
+                            <p class="text-xs text-gray-400 font-bold mb-2">特殊零件 (Special)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="selectTool('fan', '#ec4899', 100, 0)" class="tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex flex-col items-center group">
+                                    <i data-lucide="fan" class="text-pink-500 w-8 h-8 group-hover:rotate-90 transition"></i>
+                                    <span class="text-[10px] mt-1">風扇葉片</span>
+                                </button>
+                                <button onclick="selectTool('axle', '#94a3b8', 20, 0)" class="tool-btn hover:bg-gray-50 p-2 rounded border border-transparent hover:border-gray-200 flex flex-col items-center">
+                                    <div class="w-4 h-4 rounded-full bg-slate-400 border-2 border-slate-600"></div>
+                                    <span class="text-[10px] mt-1">固定軸</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-3 bg-blue-50 rounded text-xs text-blue-700">
+                        <p class="font-bold">💡 小技巧：</p>
+                        <ul class="list-disc ml-4 mt-1 space-y-1">
+                            <li>L型與T型積木可連接複雜結構。</li>
+                            <li>風扇葉片安裝在齒輪上會跟著轉動喔！</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 畫布區域 -->
+                <div class="flex-1 relative rounded-xl overflow-hidden shadow-2xl border-4 border-gray-700 h-[600px] bg-neutral-800">
+                    <!-- Canvas -->
+                    <canvas id="makerCanvas" class="grid-bg w-full h-full block"></canvas>
+                    
+                    <!-- 目前選擇工具提示 -->
+                    <div id="activeToolDisplay" class="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-bold shadow-md hidden pointer-events-none text-blue-800 border border-blue-200">
+                        目前手持: <span id="toolName">無</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 作品展示 (範例載入) -->
+    <section id="gallery" class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-10">小小創客作品集</h2>
+            <p class="text-center text-gray-500 mb-8 -mt-6">點擊下方範例，即可在積木牆上載入作品！</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 範例一 -->
+                <div onclick="loadPreset('arm')" class="rounded-lg overflow-hidden shadow-lg group relative cursor-pointer hover:shadow-2xl transition transform hover:-translate-y-1 bg-white border border-gray-100">
+                    <div class="h-48 bg-blue-50 flex items-center justify-center overflow-hidden relative">
+                        <i data-lucide="grab" class="w-20 h-20 text-blue-400 opacity-80 group-hover:scale-110 transition duration-500"></i>
+                        <div class="absolute bottom-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">點擊載入</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg text-gray-800">範例一：連動機械手臂</h3>
+                        <p class="text-gray-500 text-sm mt-1">利用連桿機構與齒輪傳動，模擬手臂抓取動作。</p>
+                        <div class="mt-3 flex gap-2">
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">五年級</span>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">工程</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 範例二 -->
+                <div onclick="loadPreset('ferris')" class="rounded-lg overflow-hidden shadow-lg group relative cursor-pointer hover:shadow-2xl transition transform hover:-translate-y-1 bg-white border border-gray-100">
+                    <div class="h-48 bg-yellow-50 flex items-center justify-center overflow-hidden relative">
+                        <i data-lucide="loader-2" class="w-20 h-20 text-yellow-400 opacity-80 group-hover:rotate-90 transition duration-700"></i>
+                        <div class="absolute bottom-2 right-2 bg-yellow-600 text-white text-xs px-2 py-1 rounded">點擊載入</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg text-gray-800">範例二：遊樂園摩天輪</h3>
+                        <p class="text-gray-500 text-sm mt-1">大型齒輪帶動外圈結構，展現穩定的圓周運動。</p>
+                        <div class="mt-3 flex gap-2">
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">四年級</span>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">數學</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 範例三 -->
+                <div onclick="loadPreset('car')" class="rounded-lg overflow-hidden shadow-lg group relative cursor-pointer hover:shadow-2xl transition transform hover:-translate-y-1 bg-white border border-gray-100">
+                    <div class="h-48 bg-green-50 flex items-center justify-center overflow-hidden relative">
+                        <i data-lucide="car" class="w-20 h-20 text-green-400 opacity-80 group-hover:translate-x-4 transition duration-500"></i>
+                        <div class="absolute bottom-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">點擊載入</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg text-gray-800">範例三：橡皮筋動力車</h3>
+                        <p class="text-gray-500 text-sm mt-1">透過多級齒輪變速，將動力傳輸至輪子。</p>
+                        <div class="mt-3 flex gap-2">
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">六年級</span>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">科學</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-6 md:mb-0 text-center md:text-left">
+                <h3 class="text-2xl font-bold">七堵國小 STEAM MAKER</h3>
+                <p class="text-gray-400 mt-2">啟發孩子未來的無限可能</p>
+            </div>
+            <div class="text-gray-500 text-sm text-center md:text-right">
+                <p>&copy; Keelung Municipal Qidu Elementary School.</p>
+                <p>Designed for STEAM Education.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- STEAM 詳解 Modals -->
+    <div id="steamModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 modal">
+        <div class="bg-white rounded-2xl shadow-2xl w-11/12 md:w-1/2 max-w-2xl overflow-hidden transform transition-all scale-95" id="modalContent">
+            <div id="modalHeader" class="p-6 text-white bg-blue-600 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-2xl font-bold">標題</h3>
+                <button onclick="closeModal()" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-8 h-8"></i>
+                </button>
+            </div>
+            <div class="p-8">
+                <div id="modalBody" class="text-gray-700 text-lg leading-relaxed space-y-4">
+                    <!-- 內容動態填充 -->
+                </div>
+                <div class="mt-8 flex justify-end">
+                    <button onclick="closeModal()" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-800 font-bold transition">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // 初始化 Icons
+        lucide.createIcons();
+
+        /* --- Audio Control --- */
+        const bgMusic = document.getElementById('bgMusic');
+        let isMusicPlaying = false;
+        
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                document.getElementById('musicIcon').innerHTML = '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>';
+                document.getElementById('musicIcon').parentElement.classList.remove('bg-pink-100');
+            } else {
+                bgMusic.volume = 0.3; // 音量小一點
+                bgMusic.play().catch(e => alert('請點擊網頁任意處以允許播放音樂'));
+                document.getElementById('musicIcon').innerHTML = '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle><path d="M2 10v3"/><path d="M22 10v3"/>'; // 簡單模擬音波圖示變化
+                document.getElementById('musicIcon').parentElement.classList.add('bg-pink-100');
+            }
+            isMusicPlaying = !isMusicPlaying;
+            lucide.createIcons(); // 重繪 icon
+        }
+
+        /* --- STEAM Modal Logic --- */
+        const steamContent = {
+            'S': {
+                title: 'Science (科學)',
+                color: 'bg-blue-600',
+                body: '<p>在創客牆中，科學體現在<strong>「觀察與驗證」</strong>。孩子們透過觀察齒輪的大小如何影響轉速（齒輪比），理解機械傳動的物理原理。</p><p>例如：大齒輪帶動小齒輪會加速，這就是變速箱的基本原理。透過動手實作，將抽象的物理公式轉化為可見的現象。</p>'
+            },
+            'T': {
+                title: 'Technology (科技)',
+                color: 'bg-green-600',
+                body: '<p>科技不只是電腦，更包含了<strong>「工具的使用」</strong>。在我們的課程中，這面創客牆本身就是一種低科技（Low-Tech）的模擬工具。</p><p>學生學習如何運用適當的零件（如連接桿、固定軸）來達成目的，這就是善用科技解決問題的基礎素養。</p>'
+            },
+            'E': {
+                title: 'Engineering (工程)',
+                color: 'bg-yellow-500',
+                body: '<p>工程是關於<strong>「結構與建造」</strong>。如何讓風扇轉動時不會掉落？如何讓L型積木穩固地支撐馬達？</p><p>在搭建過程中，孩子必須考慮重心、支撐點與結構強度，這就是小小結構工程師的日常挑戰！</p>'
+            },
+            'A': {
+                title: 'Art (藝術)',
+                color: 'bg-red-500',
+                body: '<p>STEAM 中的 A 代表藝術，強調<strong>「美感與設計」</strong>。機械裝置不僅要能動，還要有美感。</p><p>透過色彩計畫（例如紅色齒輪配綠色支架）、對稱排列，孩子們在理性的機械結構中融入感性的美學設計。</p>'
+            },
+            'M': {
+                title: 'Math (數學)',
+                color: 'bg-purple-600',
+                body: '<p>數學是機械運作的基石。<strong>「比例與幾何」</strong>無處不在。</p><ul class="list-disc pl-5"><li><strong>齒輪比</strong>：20齒帶動40齒，轉速是 2:1。</li><li><strong>空間幾何</strong>：計算孔洞距離，確保齒輪能精確嚙合。</li></ul>'
+            }
+        };
+
+        function openModal(type) {
+            const data = steamContent[type];
+            document.getElementById('modalTitle').innerText = data.title;
+            document.getElementById('modalBody').innerHTML = data.body;
+            
+            const header = document.getElementById('modalHeader');
+            header.className = `p-6 text-white flex justify-between items-center ${data.color}`;
+            
+            const modal = document.getElementById('steamModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.add('active');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('steamModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('active');
+            content.classList.add('scale-95');
+            content.classList.remove('scale-100');
+        }
+
+        /* --- Canvas & Game Logic --- */
+        const canvas = document.getElementById('makerCanvas');
+        const ctx = canvas.getContext('2d');
+        const GRID_SIZE = 40; 
+        
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth;
+            canvas.height = parent.clientHeight;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let items = [];
+        let selectedTool = null;
+        let isDragging = false;
+        let dragItem = null;
+        let isRunning = false;
+        let animationFrameId;
+        let baseRotation = 0; 
+
+        // 預設載入功能
+        window.loadPreset = function(type) {
+            stopSimulation();
+            items = []; // 清空
+            
+            // 捲動到模擬器
+            document.getElementById('simulator').scrollIntoView({behavior: 'smooth'});
+
+            // 模擬資料
+            if (type === 'arm') {
+                // 機械手臂模擬
+                items.push({type: 'beam', color: '#4ade80', size: 120, x: 200, y: 300, id: 1});
+                items.push({type: 'beam', color: '#a78bfa', size: 80, x: 200, y: 260, id: 2});
+                items.push({type: 'gear', color: 'blue', size: 60, teeth: 20, x: 200, y: 300, id: 3, isDriver: true});
+                items.push({type: 'gear', color: 'red', size: 40, teeth: 12, x: 250, y: 300, id: 4});
+                items.push({type: 'l-beam', color: '#fb923c', size: 80, x: 250, y: 260, id: 5}); // 夾爪部分
+                items.push({type: 'axle', color: '#94a3b8', size: 20, x: 200, y: 300, id: 6});
+            } else if (type === 'ferris') {
+                // 摩天輪模擬
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                items.push({type: 'gear', color: 'yellow', size: 80, teeth: 28, x: cx, y: cy, id: 1, isDriver: true});
+                // 四周的小艙
+                items.push({type: 'beam', color: '#4ade80', size: 120, x: cx, y: cy, id: 2});
+                items.push({type: 'beam', color: '#4ade80', size: 120, x: cx, y: cy, rotation90: true, id: 3}); // 垂直
+                items.push({type: 'gear', color: 'red', size: 40, teeth: 12, x: cx-60, y: cy, id: 4});
+                items.push({type: 'gear', color: 'red', size: 40, teeth: 12, x: cx+60, y: cy, id: 5});
+                items.push({type: 'gear', color: 'red', size: 40, teeth: 12, x: cx, y: cy-60, id: 6});
+                items.push({type: 'gear', color: 'red', size: 40, teeth: 12, x: cx, y: cy+60, id: 7});
+            } else if (type === 'car') {
+                // 車子
+                items.push({type: 'beam', color: '#4ade80', size: 120, x: 160, y: 300, id: 1});
+                items.push({type: 'beam', color: '#4ade80', size: 120, x: 280, y: 300, id: 2});
+                items.push({type: 'gear', color: 'yellow', size: 80, teeth: 28, x: 120, y: 300, id: 3}); // 後輪
+                items.push({type: 'gear', color: 'yellow', size: 80, teeth: 28, x: 320, y: 300, id: 4}); // 前輪
+                items.push({type: 'gear', color: 'blue', size: 60, teeth: 20, x: 220, y: 260, id: 5, isDriver: true}); // 引擎
+                items.push({type: 'fan', color: '#ec4899', size: 100, x: 220, y: 260, id: 6}); // 螺旋槳動力
+            }
+            
+            draw();
+            // 自動開始
+            setTimeout(() => {
+                if(!isRunning) toggleSimulation();
+            }, 500);
+        };
+
+        window.selectTool = function(type, color, size, teeth) {
+            selectedTool = { type, color, size, teeth };
+            
+            const toolNameDisplay = document.getElementById('toolName');
+            const toolDisplay = document.getElementById('activeToolDisplay');
+            
+            let name = "";
+            if(type === 'gear') name = `齒輪 (${teeth}齒)`;
+            else if(type === 'beam') name = `長條積木`;
+            else if(type === 'l-beam') name = `L型積木`;
+            else if(type === 't-beam') name = `T型積木`;
+            else if(type === 'fan') name = `風扇葉片`;
+            else if(type === 'axle') name = `固定軸`;
+
+            toolNameDisplay.innerText = name;
+            toolDisplay.classList.remove('hidden');
+        };
+
+        window.clearBoard = function() {
+            items = [];
+            stopSimulation();
+            draw();
+        };
+
+        window.toggleSimulation = function() {
+            isRunning = !isRunning;
+            const btn = document.getElementById('toggleRunBtn');
+            const btnText = document.getElementById('runBtnText');
+            
+            if(isRunning) {
+                btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                btn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                btn.innerHTML = `<i data-lucide="pause" class="w-5 h-5"></i> 停止運轉`;
+                lucide.createIcons();
+                animate();
+            } else {
+                stopSimulation();
+                btn.classList.add('bg-green-500', 'hover:bg-green-600');
+                btn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                btn.innerHTML = `<i data-lucide="play" class="w-5 h-5"></i> 開始運轉`;
+                lucide.createIcons();
+            }
+        };
+
+        function stopSimulation() {
+            isRunning = false;
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 分層繪製：底層 Beam -> 中層 Gear -> 上層 Decoration/Axle
+            items.filter(i => i.type.includes('beam')).forEach(drawItem);
+            items.filter(i => i.type === 'gear').forEach(drawItem);
+            items.filter(i => i.type === 'fan' || i.type === 'axle').forEach(drawItem);
+        }
+
+        function drawItem(item) {
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            
+            // 旋轉邏輯
+            let rotation = 0;
+            
+            // 如果是特殊範例中的垂直物件
+            if(item.rotation90) rotation += Math.PI/2;
+
+            if (isRunning && (item.type === 'gear' || item.type === 'fan')) {
+                // 簡單動畫：基於座標計算旋轉方向，製造連動錯覺
+                const direction = (Math.floor(item.x / 10) + Math.floor(item.y / 10)) % 2 === 0 ? 1 : -1;
+                rotation += baseRotation * direction;
+            }
+
+            ctx.rotate(rotation);
+
+            if (item.type === 'gear') {
+                drawGear(item);
+            } else if (item.type === 'beam') {
+                drawBeam(item.size, 20, item.color);
+            } else if (item.type === 'l-beam') {
+                drawLBeam(item.color);
+            } else if (item.type === 't-beam') {
+                drawTBeam(item.color);
+            } else if (item.type === 'fan') {
+                drawFan(item.color, item.size);
+            } else if (item.type === 'axle') {
+                drawAxle();
+            }
+
+            ctx.restore();
+        }
+
+        // --- 各種零件的繪圖函數 ---
+
+        function drawGear(item) {
+            ctx.fillStyle = item.color;
+            const outerRadius = item.size / 2;
+            const innerRadius = outerRadius - 5;
+            const numTeeth = item.teeth || 12;
+
+            ctx.beginPath();
+            for (let i = 0; i < numTeeth * 2; i++) {
+                const angle = (Math.PI * 2 * i) / (numTeeth * 2);
+                const r = (i % 2 === 0) ? outerRadius : innerRadius;
+                ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 中心軸
+            ctx.beginPath();
+            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#eee';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawBeam(w, h, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(-w/2, -h/2, w, h, 10);
+            ctx.fill();
+            // 孔洞
+            ctx.fillStyle = '#2a2a2a'; 
+            const holes = Math.floor(w / 20);
+            const startX = -((holes-1) * 20) / 2;
+            for(let k=0; k<holes; k++) {
+                ctx.beginPath();
+                ctx.arc(startX + k*20, 0, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        function drawLBeam(color) {
+            ctx.fillStyle = color;
+            // 垂直部分
+            ctx.beginPath();
+            ctx.roundRect(-10, -40, 20, 80, 10);
+            ctx.fill();
+            // 水平部分
+            ctx.beginPath();
+            ctx.roundRect(-10, 20, 60, 20, 10);
+            ctx.fill();
+            
+            // 孔洞 (簡化)
+            ctx.fillStyle = '#2a2a2a';
+            ctx.beginPath(); ctx.arc(0, -30, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, -10, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 10, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(0, 30, 4, 0, Math.PI*2); ctx.fill(); // 轉角
+            ctx.beginPath(); ctx.arc(20, 30, 4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(40, 30, 4, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawTBeam(color) {
+            ctx.fillStyle = color;
+            // 垂直
+            ctx.beginPath();
+            ctx.roundRect(-10, -40, 20, 80, 10);
+            ctx.fill();
+            // 水平
+            ctx.beginPath();
+            ctx.roundRect(-40, -10, 80, 20, 10);
+            ctx.fill();
+            
+            // 中心孔
+            ctx.fillStyle = '#2a2a2a';
+            ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawFan(color, size) {
+            ctx.fillStyle = color;
+            const radius = size/2;
+            // 畫三個葉片
+            for(let i=0; i<3; i++) {
+                ctx.save();
+                ctx.rotate(i * (Math.PI*2/3));
+                ctx.beginPath();
+                ctx.ellipse(0, -radius/2, 10, radius/2, 0, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+            // 中心帽
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawAxle() {
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#475569'; ctx.lineWidth=2; ctx.stroke();
+            // 十字紋路
+            ctx.beginPath(); ctx.moveTo(-4,0); ctx.lineTo(4,0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0,-4); ctx.lineTo(0,4); ctx.stroke();
+        }
+
+        function animate() {
+            if (!isRunning) return;
+            baseRotation += 0.05; 
+            draw();
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // 互動相關
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function snapToGrid(val) {
+            return Math.round(val / (GRID_SIZE/2)) * (GRID_SIZE/2);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            
+            // 點選邏輯
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                const dx = pos.x - item.x;
+                const dy = pos.y - item.y;
+                const hitDist = 30; // 簡化判定區域
+                
+                if (Math.sqrt(dx*dx + dy*dy) < hitDist) {
+                    if (e.button === 2) { 
+                        items.splice(i, 1);
+                        draw();
+                        return;
+                    } else {
+                        isDragging = true;
+                        dragItem = item;
+                        return;
+                    }
+                }
+            }
+
+            if (selectedTool && e.button === 0) {
+                const newItem = {
+                    ...selectedTool,
+                    x: snapToGrid(pos.x),
+                    y: snapToGrid(pos.y),
+                    id: Date.now()
+                };
+                items.push(newItem);
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging && dragItem) {
+                const pos = getMousePos(e);
+                dragItem.x = snapToGrid(pos.x);
+                dragItem.y = snapToGrid(pos.y);
+                draw();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            dragItem = null;
+        });
+        
+        canvas.addEventListener('contextmenu', event => event.preventDefault());
+
+        // 初始化
+        setTimeout(resizeCanvas, 100); 
+        // 預設不放零件，讓畫面乾淨，等待使用者操作或點擊範例
+        
+    </script>
+</body>
+</html>
